@@ -11,19 +11,19 @@ CBLUE="${CSI}1;34m"
 ARG="$*"
 VERSION=$("$CMDCAT" /etc/debian_version)
 
-if [[ "$VERSION" = 9.* ]]; then
-	DEBNUMBER="Debian_9.0.deb"
-	DEBNAME="stretch"
-
-elif [[ "$VERSION" = 10.* ]]; then
+if [[ "$VERSION" = 10.* ]]; then
 	DEBNUMBER="Debian_10.0.deb"
 	DEBNAME="buster"
+
+elif [[ "$VERSION" = 11.* ]]; then
+	DEBNUMBER="Debian_11.0.deb"
+	DEBNAME="bullseye"
 fi
 
-HISTOLOG="histo-2019"
-PHPNAME="php7.3"
-PHPPATH="/etc/php/7.3"
-PHPSOCK="/run/php/php7.3-fpm.sock"
+HISTOLOG="histo-2022"
+PHPNAME="php7.4"
+PHPPATH="/etc/php/7.4"
+PHPSOCK="/run/php/php7.4-fpm.sock"
 #LIBZEN0NAME="libzen0v5"
 #LIBMEDIAINFO0NAME="libmediainfo0v5"
 

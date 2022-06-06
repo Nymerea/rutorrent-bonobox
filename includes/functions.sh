@@ -1,7 +1,7 @@
 #!/bin/bash
 
 FONCCONTROL () {
-	if [[ $("$CMDUNAME" -m) == x86_64 ]] && [[ "$VERSION" = 9.* ]] || [[ "$VERSION" = 10.* ]]; then
+	if [[ $("$CMDUNAME" -m) == x86_64 ]] && [[ "$VERSION" = 10.* ]] || [[ "$VERSION" = 11.* ]]; then
 		if [ "$("$CMDID" -u)" -ne 0 ]; then
 			"$CMDECHO" ""; set "100"; FONCTXT "$1"; "$CMDECHO" -e "${CRED}$TXT1${CEND}"; "$CMDECHO" ""
 			exit 1
@@ -73,7 +73,7 @@ FONCIP () {
 	if [ "$IP" = "" ]; then
 		IP=$("$CMDWGET" -qO- ipv4.icanhazip.com)
 			if [ "$IP" = "" ]; then
-				IP=$("$CMDWGET" -qO- ipv4.bonobox.net)
+				IP=$("$CMDWGET" -qO- ipv4.ratbox.nl)
 				if [ "$IP" = "" ]; then
 					IP=x.x.x.x
 				fi
@@ -151,7 +151,7 @@ FONCPHPCONF () {
 		    "stat"   => '/usr/bin/stat',
 		    "php"    => '/usr/bin/@PHPNAME@',
 		    "pgrep"  => '/usr/bin/pgrep',
-		    "python" => '/usr/bin/python2.7'
+		    "python" => '/usr/bin/python3'
 		    );
 		\$topDirectory = '/home/$1';
 		\$scgi_port = $2;
@@ -174,37 +174,6 @@ FONCSCRIPTRT () {
 	"$CMDSED" -i "s/@USER@/$1/g;" /etc/init.d/"$1"-rtorrent
 	"$CMDCHMOD" +x /etc/init.d/"$1"-rtorrent
 	"$CMDUPDATERC" "$1"-rtorrent defaults
-}
-
-FONCIRSSI () {
-	IRSSIPORT=1"$2"
-	"$CMDMKDIR" -p /home/"$1"/.irssi/scripts/autorun
-	cd /home/"$1"/.irssi/scripts || exit
-	"$CMDCURL" -sL http://git.io/vlcND | "$CMDGREP" -Po '(?<="browser_download_url": ")(.*-v[\d.]+.zip)' | "$CMDXARGS" "$CMDWGET" --quiet -O autodl-irssi.zip
-	"$CMDUNZIP" -o autodl-irssi.zip
-	command "$CMDRM" autodl-irssi.zip
-	"$CMDCP" -f /home/"$1"/.irssi/scripts/autodl-irssi.pl /home/"$1"/.irssi/scripts/autorun
-	"$CMDMKDIR" -p /home/"$1"/.autodl
-
-	"$CMDCAT" <<- EOF > /home/"$1"/.autodl/autodl.cfg
-		[options]
-		gui-server-port = $IRSSIPORT
-		gui-server-password = $3
-	EOF
-
-	"$CMDMKDIR" -p  "$RUCONFUSER"/"$1"/plugins/autodl-irssi
-
-	"$CMDCAT" <<- EOF > "$RUCONFUSER"/"$1"/plugins/autodl-irssi/conf.php
-		<?php
-		\$autodlPort = $IRSSIPORT;
-		\$autodlPassword = "$3";
-		?>
-	EOF
-
-	"$CMDCP" -f "$FILES"/rutorrent/irssi.conf /etc/init.d/"$1"-irssi
-	"$CMDSED" -i "s/@USER@/$1/g;" /etc/init.d/"$1"-irssi
-	"$CMDCHMOD" +x /etc/init.d/"$1"-irssi
-	"$CMDUPDATERC" "$1"-irssi defaults
 }
 
 FONCBAKSESSION () {
@@ -360,14 +329,3 @@ FONCARG () {
 	USERPWD=$("$CMDGREP" -m 1 : < "$ARGFILE" | "$CMDCUT" -d ':' -f2-)
 	"$CMDSED" -i '1d' "$ARGFILE"
 }
-
-#FONCMEDIAINFO () {
-#	cd /tmp || exit
-#	"$CMDWGET" http://mediaarea.net/download/binary/libzen0/"$LIBZEN0"/"$LIBZEN0NAME"_"$LIBZEN0"-1_amd64."$DEBNUMBER"
-#	"$CMDWGET" http://mediaarea.net/download/binary/libmediainfo0/"$LIBMEDIAINFO0"/"$LIBMEDIAINFO0NAME"_"$LIBMEDIAINFO0"-1_amd64."$DEBNUMBER"
-#	"$CMDWGET" http://mediaarea.net/download/binary/mediainfo/"$MEDIAINFO"/mediainfo_"$MEDIAINFO"-1_amd64."$DEBNUMBER"
-#
-#	"$CMDDPKG" -i "$LIBZEN0NAME"_"$LIBZEN0"-1_amd64."$DEBNUMBER"
-#	"$CMDDPKG" -i "$LIBMEDIAINFO0NAME"_"$LIBMEDIAINFO0"-1_amd64."$DEBNUMBER"
-#	"$CMDDPKG" -i mediainfo_"$MEDIAINFO"-1_amd64."$DEBNUMBER"
-#}

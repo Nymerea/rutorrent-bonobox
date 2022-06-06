@@ -3,7 +3,7 @@
 # Script d'installation ruTorrent / Nginx
 # Auteur : Ex_Rat
 #
-# Nécessite Debian 9/10 - 64 bits & un serveur fraîchement installé
+# Nécessite Debian 10/11 - 64 bits & un serveur fraîchement installé
 #
 # Multi-utilisateurs
 # Inclus VsFTPd (ftp & ftps sur le port 21), Fail2ban (avec conf nginx, ftp & ssh)
@@ -11,10 +11,11 @@
 # Tiré du tutoriel de mondedie.fr disponible ici:
 # https://mondedie.fr/d/10831-tuto-installer-rutorrent-sur-debian-10-nginx-php-fpm
 #
-# Merci aux traducteurs: Sophie, Spectre, Hardware, Zarev, SirGato, MiguelSam, Hierra.
+# Merci aux contributeurs: Sophie, Spectre, Hardware, Zarev, SirGato, MiguelSam, Hierra, mog54.
 #
 # Installation:
 #
+# su -  ou  sudo su -
 # apt-get update && apt-get upgrade -y
 # apt-get install git-core -y
 #
@@ -170,7 +171,6 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 		ffmpeg \
 		gawk \
 		htop \
-		irssi \
 		libarchive-zip-perl \
 		libcppunit-dev \
 		libcurl4-openssl-dev \
@@ -194,6 +194,7 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 		openssl \
 		pastebinit \
 		"$PHPNAME" \
+		"$PHPNAME"-bcmath \
 		"$PHPNAME"-cli \
 		"$PHPNAME"-common \
 		"$PHPNAME"-curl \
@@ -208,8 +209,8 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 		pkg-config \
 		psmisc \
 		pv \
-		python \
-		python-pip \
+		python3-pip \
+		python3-venv \
 		rar \
 		screen \
 		sox \
@@ -221,23 +222,20 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 		zip \
 		zlib1g-dev
 
-		if [[ "$VERSION" = 9.* ]]; then
-			"$CMDAPTGET" install -y \
-				libtinyxml2-4
-
-		elif [[ "$VERSION" = 10.* ]]; then
+		if [[ "$VERSION" = 10.* ]]; then
 			"$CMDAPTGET" install -y \
 				libtinyxml2-6a
+
+		elif [[ "$VERSION" = 11.* ]]; then
+			"$CMDAPTGET" install -y \
+				libtinyxml2-8 \
+				python-is-python2
 		fi
 
 	"$CMDECHO" ""; set "136" "134"; FONCTXT "$1" "$2"; "$CMDECHO" -e "${CBLUE}$TXT1${CEND}${CGREEN}$TXT2${CEND}"; "$CMDECHO" ""
 
 	# génération clé 2048 bits
 	"$CMDOPENSSL" dhparam -out dhparams.pem 2048 >/dev/null 2>&1 &
-
-	# téléchargement complément favicons
-	"$CMDWGET" -T 10 -t 3 http://www.bonobox.net/script/favicon.tar.gz || "$CMDWGET" -T 10 -t 3 http://alt.bonobox.net/favicon.tar.gz
-	"$CMDTAR" xzfv favicon.tar.gz
 
 	# création fichiers couleurs nano
 	"$CMDCP" -f "$FILES"/nano/ini.nanorc /usr/share/nano/ini.nanorc
@@ -332,7 +330,7 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 	cd /tmp || exit
 	"$CMDGIT" clone --progress https://github.com/exrat/rutorrent-plugins-pack
 
-	for PLUGINS in 'addzip' 'autodl-irssi' 'chat' 'filemanager' 'fileshare' 'geoip2' 'lbll-suite' 'logoff' 'nfo' 'pausewebui'  'ratiocolor' 'titlebar' 'trackerstatus'; do
+	for PLUGINS in 'addzip' 'chat' 'filemanager' 'filemanager-share' 'toggle_details_button' 'geoip2' 'lbll-suite' 'logoff' 'nfo' 'pausewebui' 'ratiocolor' 'titlebar' 'trackerstatus'; do
 		"$CMDCP" -R /tmp/rutorrent-plugins-pack/"$PLUGINS" "$RUPLUGINS"/
 	done
 
@@ -341,10 +339,13 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 	"$CMDPIP" install cloudscraper
 
 	# configuration geoip2
-	"$CMDWGET" https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
-	"$CMDTAR" xzfv GeoLite2-City.tar.gz
-	cd /tmp/GeoLite2-City_* || exit
-	"$CMDMV" GeoLite2-City.mmdb "$RUPLUGINS"/geoip2/database/GeoLite2-City.mmdb
+	cd "$RUPLUGINS"/geoip2/database || exit
+
+	for DATABASE in *.tar.gz; do
+		"$CMDTAR" xzfv "$DATABASE"
+	done
+
+	"$CMDRM" -R GeoLite2-City.mmdb.tar.gz GeoLite2-Country.mmdb.tar.gz
 
 	# configuration filemanager
 	"$CMDCP" -f "$FILES"/rutorrent/filemanager.conf "$RUPLUGINS"/filemanager/conf.php
@@ -352,14 +353,14 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 	"$CMDSED" -i "s|@ZIP@|$CMDZIP|g;" "$RUPLUGINS"/filemanager/conf.php
 	"$CMDSED" -i "s|@UNZIP@|$CMDUNZIP|g;" "$RUPLUGINS"/filemanager/conf.php
 	"$CMDSED" -i "s|@TAR@|$CMDTAR|g;" "$RUPLUGINS"/filemanager/conf.php
-	"$CMDSED" -i "s|@GZIP@|$CMDGZIP|g;" "$RUPLUGINS"/filemanager/conf.php
-	"$CMDSED" -i "s|@BZIP2@|$CMDBZIP2|g;" "$RUPLUGINS"/filemanager/conf.php
+	#"$CMDSED" -i "s|@GZIP@|$CMDGZIP|g;" "$RUPLUGINS"/filemanager/conf.php
+	#"$CMDSED" -i "s|@BZIP2@|$CMDBZIP2|g;" "$RUPLUGINS"/filemanager/conf.php
 
-	# configuration fileshare
-	"$CMDCP" -f "$FILES"/rutorrent/fileshare.conf "$RUPLUGINS"/fileshare/conf.php
-	"$CMDSED" -i "s/@IP@/$IP/g;" "$RUPLUGINS"/fileshare/conf.php
-	"$CMDCHOWN" -R "$WDATA" "$RUPLUGINS"/fileshare
-	"$CMDLN" -s "$RUPLUGINS"/fileshare/share.php "$NGINXBASE"/share.php
+	# configuration filemanager-share
+	"$CMDCP" -f "$FILES"/rutorrent/filemanager-share.conf "$RUPLUGINS"/filemanager-share/conf.php
+	"$CMDSED" -i "s/@IP@/$IP/g;" "$RUPLUGINS"/filemanager-share/conf.php
+	"$CMDCHOWN" -R "$WDATA" "$RUPLUGINS"/filemanager-share
+	"$CMDLN" -s "$RUPLUGINS"/filemanager-share/share.php "$NGINXBASE"/share.php
 
 	# configuration create
 	# shellcheck disable=SC2154
@@ -368,18 +369,7 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 	"$CMDSED" -i "s#$pathToCreatetorrent = '';#$pathToCreatetorrent = '/usr/bin/mktorrent';#" "$RUPLUGINS"/create/conf.php
 
 	# configuration logoff
-	"$CMDSED" -i "s/scars,user1,user2/$USER/g;" "$RUPLUGINS"/logoff/conf.php
-
-	# configuration autodl-irssi
-	cd "$RUPLUGINS" || exit
-	"$CMDCP" -f autodl-irssi/_conf.php autodl-irssi/conf.php
-	"$CMDCP" -f autodl-irssi/css/oblivion.min.css autodl-irssi/css/spiritofbonobo.min.css
-	"$CMDCP" -f autodl-irssi/css/oblivion.min.css.map autodl-irssi/css/spiritofbonobo.min.css.map
-	"$CMDTOUCH" autodl-irssi/css/materialdesign.min.css
-	FONCIRSSI "$USER" "$PORT" "$USERPWD"
-
-	# installation mediainfo
-	# FONCMEDIAINFO
+	"$CMDSED" -i "s/user1,user2,user3/$USER/g;" "$RUPLUGINS"/logoff/conf.php
 
 	# variable minutes aléatoire crontab geoip2
 	MAXIMUM=58
@@ -388,16 +378,12 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 
 	cd "$SCRIPT" || exit
 
-	for COPY in 'updateGeoIP.sh' 'backup-session.sh'
-	do
+	for COPY in 'updateGeoIP.sh' 'backup-session.sh'; do
 		"$CMDCP" -f "$FILES"/scripts/"$COPY" "$SCRIPT"/"$COPY"
 		"$CMDCHMOD" a+x "$COPY"
 	done
 
 	FONCBAKSESSION
-
-	# copie favicons trackers
-	"$CMDCP" -f /tmp/favicon/*.png "$RUPLUGINS"/tracklabels/trackers/
 
 	# ajout thèmes
 	"$CMDRM" -R "${RUPLUGINS:?}"/theme/themes/Blue
@@ -502,6 +488,7 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 	FONCRTCONF "$USERMAJ"  "$PORT" "$USER"
 
 	# config.php
+	"$CMDMKDIR" "$RUCONFUSER"/"$USER"
 	FONCPHPCONF "$USER" "$PORT" "$USERMAJ"
 
 	# plugins.ini
@@ -510,13 +497,12 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 	# script rtorrent
 	FONCSCRIPTRT "$USER"
 	FONCSERVICE start "$USER"-rtorrent
-	FONCSERVICE start "$USER"-irssi
 
 	# mise en place crontab
 	"$CMDCRONTAB" -l > rtorrentdem
 
 	"$CMDCAT" <<- EOF >> rtorrentdem
-		$UPGEOIP 2 9 * * $CMDBASH $SCRIPT/updateGeoIP.sh > /dev/null 2>&1
+		#$UPGEOIP 2 9 * * $CMDBASH $SCRIPT/updateGeoIP.sh > /dev/null 2>&1
 		0 5 * * * $CMDBASH $SCRIPT/backup-session.sh > /dev/null 2>&1
 	EOF
 
@@ -744,9 +730,6 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 			# plugins.ini
 			"$CMDCP" -f "$FILES"/rutorrent/plugins.ini "$RUCONFUSER"/"$USER"/plugins.ini
 
-			# configuration autodl-irssi
-			FONCIRSSI "$USER" "$PORT" "$USERPWD"
-
 			# permissions
 			"$CMDCHOWN" -R "$WDATA" "$RUTORRENT"
 			"$CMDCHOWN" -R "$USER":"$USER" /home/"$USER"
@@ -756,7 +739,6 @@ if [ ! -f "$NGINXENABLE"/rutorrent.conf ]; then
 			# script rtorrent
 			FONCSCRIPTRT "$USER"
 			FONCSERVICE start "$USER"-rtorrent
-			FONCSERVICE start "$USER"-irssi
 
 			# htpasswd
 			FONCHTPASSWD "$USER"

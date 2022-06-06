@@ -22,17 +22,10 @@ FONCDEP () {
 		deb https://packages.sury.org/php/ $1 main
 	EOF
 
-	"$CMDCAT" <<- EOF > "$SOURCES"/mediainfo.list
-		# dépôt mediainfo
-		deb http://mediaarea.net/repo/deb/debian/ $1 main
-	EOF
-
 	# clés
 	"$CMDWGET" https://packages.sury.org/php/apt.gpg -O sury.gpg && "$CMDAPTKEY" add sury.gpg 2>/dev/null
 
 	"$CMDWGET" http://nginx.org/keys/nginx_signing.key && "$CMDAPTKEY" add nginx_signing.key 2>/dev/null
-
-	"$CMDWGET" http://mediaarea.net/repo/deb/debian/pubkey.gpg -O mediainfo.gpg && "$CMDAPTKEY" add mediainfo.gpg 2>/dev/null
 
 	"$CMDAPTGET" update -oAcquire::AllowInsecureRepositories=true && "$CMDAPTGET" install -y --allow-unauthenticated deb-multimedia-keyring
 }
